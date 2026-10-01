@@ -55,7 +55,9 @@ struct SettingsView: View {
                 } footer: {
                     Text(store.syncsWithICloud
                          ? "Your atlas syncs privately through your own iCloud account. Nobody else, including the app’s maker, can read it."
-                         : "Sign in to iCloud on this iPhone to sync your atlas privately across your devices.")
+                         : (AtlasStore.iCloudSyncInBuild
+                            ? "Sign in to iCloud on this iPhone to sync your atlas privately across your devices."
+                            : "Your atlas is saved on this iPhone only. Export a backup to keep a copy somewhere else."))
                 }
 
                 Section {

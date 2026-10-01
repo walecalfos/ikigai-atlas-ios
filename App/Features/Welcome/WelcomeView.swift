@@ -46,7 +46,9 @@ struct WelcomeView: View {
                     WelcomePoint(symbol: "text.book.closed", title: "Evidence before insight",
                                  text: "You start from real memories and real weeks, because people guess poorly about purpose in the abstract.")
                     WelcomePoint(symbol: "lock", title: "Private by design",
-                                 text: "Your answers stay on your iPhone and in your own iCloud. No accounts, no tracking.")
+                                 text: AtlasStore.iCloudSyncInBuild
+                                     ? "Your answers stay on your iPhone and in your own iCloud. No accounts, no tracking."
+                                     : "Your answers stay on your iPhone. No accounts, no tracking.")
                 }
 
                 VStack(spacing: Space.s) {

@@ -1,0 +1,104 @@
+name: Xcode project
+
+# Keeps the committed IkigaiAtlas.xcodeproj in step with project.yml, then builds that
+# committed project exactly as a fresh Mac would: no Terminal tools, no development team,
+# no signing overrides. If this passes, downloading the ZIP and pressing Run should work.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xcode-project
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Keep the Xcode project in sync
+    runs-on: macos-15
+    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate the project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Pin package versions
+        run: xcodebuild -resolvePackageDependencies -project IkigaiAtlas.xcodeproj -scheme IkigaiAtlas
+      - name: Commit the project if it changed
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A IkigaiAtlas.xcodeproj App/Info.plist
+          if git diff --cached --quiet; then
+            echo "The committed project is already up to date."
+          else
+            git commit -q -m "Regenerate the Xcode project from project.yml"
+            for attempt in 1 2 3; do
+              git pull -q --rebase origin main && git push -q origin HEAD:main && break
+              sleep 5
+            done
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  fresh-mac:
+    name: Fresh Mac build (${{ matrix.runner }})
+    needs: sync
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.sync.outputs.sha }}
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Report the Xcode version
+        run: echo "::notice title=Xcode on ${{ matrix.runner }}::$(xcodebuild -version | tr '\n' ' ')"
+      - name: Build the committed project as a fresh Mac would
+        run: |
+          set -o pipefail
+          xcodebuild -project IkigaiAtlas.xcodeproj -scheme IkigaiAtlas -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' build 2>&1 \
+            | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
+      - name: Report compiler errors as annotations
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import os, re
+          root = os.getcwd() + "/"
+          def esc(s):
+              return s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          located, other = [], []
+          for line in open("build.log", errors="replace"):
+              line = line.rstrip()
+              m = re.search(r"(/[^\s:]+):(\d+):(\d+): (?:fatal )?error: (.*)", line)
+              if m:
+                  item = (m.group(1).replace(root, ""), m.group(2), m.group(4))
+                  if item not in located:
+                      located.append(item)
+              elif "error:" in line and line not in other:
+                  other.append(line)
+          for path, ln, msg in located[:10]:
+              print(f"::error file={path},line={ln}::{esc(msg)}")
+          summary = [f"{p}:{l}: {m}" for p, l, m in located] + other
+          if summary:
+              print("::notice title=All build errors::" + esc("\n".join(summary[:80])))
+          PY

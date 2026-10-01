@@ -57,11 +57,18 @@ final class AtlasStore: ObservableObject {
             }
     }
 
-    /// Builds the store, preferring iCloud sync and falling back to on-device storage,
-    /// then to memory, so the app always opens.
+    /// Whether this build was made with iCloud sync switched on (`IKIGAI_ICLOUD_SYNC` in Config/App.xcconfig).
+    /// iCloud needs a paid Apple Developer Program membership, so it's off by default.
+    static var iCloudSyncInBuild: Bool {
+        (Bundle.main.object(forInfoDictionaryKey: "IkigaiICloudSync") as? String)?.uppercased() == "YES"
+    }
+
+    /// Builds the store, using iCloud sync when the build allows it, falling back to on-device
+    /// storage, then to memory, so the app always opens.
     static func makeDefault() -> AtlasStore {
         let schema = Schema([AtlasRecord.self])
-        if let cloud = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)]) {
+        if iCloudSyncInBuild,
+           let cloud = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)]) {
             return AtlasStore(container: cloud, syncsWithICloud: FileManager.default.ubiquityIdentityToken != nil)
         }
         if let local = try? ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, cloudKitDatabase: .none)]) {

@@ -1,0 +1,18 @@
+// Settings you may want to change. Xcode reads this file for the IkigaiAtlas app target.
+
+// The app's unique ID. Change it if Xcode says the ID is unavailable on your account.
+PRODUCT_BUNDLE_IDENTIFIER = com.walecalfos.ikigaiatlas
+
+// Your Apple developer team. You can leave this empty and pick your team in Xcode
+// under Signing & Capabilities instead.
+DEVELOPMENT_TEAM =
+
+// iCloud sync needs a paid Apple Developer Program membership.
+// Leave it as NO to run the app on the simulator or on your own iPhone with a free Apple ID.
+// Set it to YES once you have a paid membership; the app then syncs through the user's own iCloud.
+IKIGAI_ICLOUD_SYNC = NO
+
+// Internal: picks the entitlements file that matches the switch above.
+IKIGAI_ENTITLEMENTS_YES = App/IkigaiAtlas-iCloud.entitlements
+IKIGAI_ENTITLEMENTS_NO =
+CODE_SIGN_ENTITLEMENTS = $(IKIGAI_ENTITLEMENTS_$(IKIGAI_ICLOUD_SYNC))
