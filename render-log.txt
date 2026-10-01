@@ -1,0 +1,5 @@
+statement: ok 370x257
+map: ok 370x370
+radar: ok 370x336
+energy: ok 370x320
+pdf: ok
