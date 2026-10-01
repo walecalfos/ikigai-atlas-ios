@@ -1,0 +1,87 @@
+# Generates IkigaiAtlas.xcodeproj with XcodeGen (https://github.com/yonaskolb/XcodeGen).
+# Run `xcodegen` in this folder after cloning, or after adding or removing files.
+name: IkigaiAtlas
+
+options:
+  bundleIdPrefix: com.walecalfos
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Apple Developer team here or in Xcode under Signing & Capabilities.
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  FluentUI:
+    url: https://github.com/microsoft/fluentui-apple
+    from: "0.37.0"
+  IkigaiCore:
+    path: Packages/IkigaiCore
+
+targets:
+  IkigaiAtlas:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: App
+        excludes:
+          - "Info.plist"
+          - "IkigaiAtlas.entitlements"
+          - "Resources/Fonts/OFL.txt"
+    dependencies:
+      - package: FluentUI
+      - package: IkigaiCore
+    entitlements:
+      path: App/IkigaiAtlas.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.walecalfos.ikigaiatlas
+        com.apple.developer.icloud-services:
+          - CloudKit
+        aps-environment: development
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Ikigai Atlas
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.lifestyle
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: AccentColor
+          UIImageRespectsSafeAreaInsets: true
+        UIAppFonts:
+          - ShipporiMinchoB1-Bold.ttf
+          - ShipporiMinchoB1-ExtraBold.ttf
+        UIBackgroundModes:
+          - remote-notification
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSFaceIDUsageDescription: Ikigai Atlas uses Face ID to keep your reflections private.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.walecalfos.ikigaiatlas
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+
+schemes:
+  IkigaiAtlas:
+    build:
+      targets:
+        IkigaiAtlas: all
+    run:
+      config: Debug
+    archive:
+      config: Release

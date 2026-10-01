@@ -1,0 +1,19 @@
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+!Packages/**/*.xcworkspace/
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+# XcodeGen output
+App/Info.plist
+App/IkigaiAtlas.entitlements
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+# macOS
+.DS_Store
