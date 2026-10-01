@@ -79,6 +79,24 @@ final class ExampleAtlasTests: XCTestCase {
         XCTAssertTrue(md.contains("- [ ] Block Sunday mornings for the allotment, phone off (This Sunday), feeds freedom"))
     }
 
+    func testSourceMapKeepsDotsInsideTheirWedges() {
+        let dots = SourceMap.layout(atlas.liveSources)
+        XCTAssertEqual(dots.count, 9)
+        XCTAssertEqual(Set(dots.map(\.number)), Set(1...9))
+        for dot in dots {
+            let dx = dot.x - SourceMap.center, dy = dot.y - SourceMap.center
+            let r = (dx * dx + dy * dy).squareRoot()
+            XCTAssertGreaterThan(r, SourceMap.innerRadius)
+            XCTAssertLessThan(r, SourceMap.outerRadius)
+        }
+        for i in 0..<dots.count {
+            for j in (i + 1)..<dots.count {
+                let d = ((dots[i].x - dots[j].x) * (dots[i].x - dots[j].x) + (dots[i].y - dots[j].y) * (dots[i].y - dots[j].y)).squareRoot()
+                XCTAssertGreaterThan(d, 15, "dots \(dots[i].number) and \(dots[j].number) overlap")
+            }
+        }
+    }
+
     func testReadingDigestFitsBudget() {
         let digest = atlas.readingDigest(maxCharacters: 1_500)
         XCTAssertLessThanOrEqual(digest.count, 1_500)

@@ -109,6 +109,8 @@ enum Typo {
     static var body: Font { f(.body1) }
     static var body2Strong: Font { f(.body2Strong) }
     static var body2: Font { f(.body2) }
+    /// Serif, for the ikigai statement on the atlas.
+    static var statement: Font { Font.fluent(FontInfo(name: "ShipporiMinchoB1-Bold", size: 24, weight: .bold)) }
     static var captionStrong: Font { f(.caption1Strong) }
     static var caption: Font { f(.caption1) }
     static var caption2: Font { f(.caption2) }
@@ -133,4 +135,13 @@ enum Radius {
 enum Stroke {
     static let hairline = GlobalTokens.stroke(.width10)
     static let thick = GlobalTokens.stroke(.width20)
+}
+
+extension View {
+    /// Applies the atlas Fluent theme and accent colour to a presentation root.
+    func themed() -> some View {
+        self
+            .fluentTheme(AtlasTheme.theme)
+            .tint(Palette.brand)
+    }
 }

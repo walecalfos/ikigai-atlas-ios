@@ -11,12 +11,13 @@ import IkigaiCore
 enum AtlasButtonKind {
     case primary, secondary, subtle, danger
 
-    fileprivate var fluent: FluentUI.ButtonStyle {
+    /// The Fluent 2 button style for this role.
+    fileprivate var fluentStyle: FluentButtonStyle {
         switch self {
-        case .primary: return .accent
-        case .secondary: return .outlineNeutral
-        case .subtle: return .subtle
-        case .danger: return .dangerOutline
+        case .primary: return FluentButtonStyle(style: .accent)
+        case .secondary: return FluentButtonStyle(style: .outlineNeutral)
+        case .subtle: return FluentButtonStyle(style: .subtle)
+        case .danger: return FluentButtonStyle(style: .dangerOutline)
         }
     }
 }
@@ -24,7 +25,7 @@ enum AtlasButtonKind {
 extension View {
     /// Applies Fluent 2's button style for the given role.
     func atlasButton(_ kind: AtlasButtonKind = .primary, size: ControlSize = .regular) -> some View {
-        buttonStyle(FluentButtonStyle(style: kind.fluent))
+        buttonStyle(kind.fluentStyle)
             .controlSize(size)
     }
 }
@@ -212,7 +213,7 @@ struct FieldBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            Text(label).font(Typo.bodyStrong).foregroundStyle(Palette.ink)
+            if !label.isEmpty { Text(label).font(Typo.bodyStrong).foregroundStyle(Palette.ink) }
             if let hint { Text(hint).font(Typo.body2).foregroundStyle(Palette.ink2) }
             TextField(prompt, text: $text, axis: .vertical)
                 .lineLimit(lines)
@@ -221,7 +222,7 @@ struct FieldBlock: View {
                 .padding(Space.s)
                 .background(Palette.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(Palette.line, lineWidth: Stroke.hairline))
-                .accessibilityLabel(label)
+                .accessibilityLabel(label.isEmpty ? prompt : label)
         }
     }
 }
@@ -372,5 +373,31 @@ extension View {
         self
             .scrollContentBackground(.hidden)
             .background(Palette.canvas.ignoresSafeArea())
+    }
+}
+
+// MARK: - Bindings
+
+extension Binding {
+    /// A binding to a part of this value, e.g. `$store.atlas.pulse.at(\.[need])`.
+    func at<Part>(_ keyPath: WritableKeyPath<Value, Part>) -> Binding<Part> {
+        self[dynamicMember: keyPath]
+    }
+}
+
+// MARK: - Keyboard
+
+extension View {
+    /// Adds a Done button above the keyboard.
+    func keyboardDoneButton() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                SwiftUI.Button("Done") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                .fontWeight(.semibold)
+            }
+        }
     }
 }

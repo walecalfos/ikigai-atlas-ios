@@ -15,6 +15,15 @@ enum Reminders {
         var eveningMinutes: Int
     }
 
+    /// The reminder settings saved on this device.
+    static var savedSettings: Settings {
+        let d = UserDefaults.standard
+        return Settings(morningOn: d.bool(forKey: "morningOn"),
+                        morningMinutes: d.object(forKey: "morningMinutes") as? Int ?? 8 * 60,
+                        eveningOn: d.bool(forKey: "eveningOn"),
+                        eveningMinutes: d.object(forKey: "eveningMinutes") as? Int ?? 21 * 60)
+    }
+
     /// Asks for permission the first time a reminder is switched on.
     static func requestPermission() async -> Bool {
         let center = UNUserNotificationCenter.current()
