@@ -62,7 +62,7 @@ struct LiveStage: View {
                     Text("Evening question").font(Typo.bodyStrong).foregroundStyle(Palette.ink)
                     LineField(prompt: Framework.defaultEveningQuestion, text: $store.atlas.rhythm.evening, label: "Evening question")
                 }
-                Panel { ReminderControls() }
+                Panel { ReminderControls() }.id("reminders")
                 ReviewDateControl()
             }
         }

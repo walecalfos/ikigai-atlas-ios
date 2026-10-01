@@ -40,7 +40,7 @@ struct WeaveStage: View {
                     .atlasButton(.secondary)
             }
 
-            ReadingPanel()
+            ReadingPanel().id("reading")
 
             VStack(alignment: .leading, spacing: Space.s) {
                 SectionHeading(title: "Your ikigai, in a sentence",

@@ -30,6 +30,7 @@ struct PulseStage: View {
             VStack(alignment: .leading, spacing: 0) {
                 SectionHeading(title: "The seven needs", hint: "How true is each statement for you right now?")
                     .padding(.bottom, Space.xs)
+                    .id("needs")
                 ForEach(Need.allCases) { need in
                     VStack(alignment: .leading, spacing: Space.xs) {
                         HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
@@ -51,7 +52,7 @@ struct PulseStage: View {
 
             if store.atlas.ratedNeeds.count >= 4, let average = store.atlas.pulseAverage {
                 Panel {
-                    Eyebrow(text: "Your baseline")
+                    Eyebrow(text: "Your baseline").id("baseline")
                     HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                         Text(String(format: "%.1f", average)).font(Typo.display).monospacedDigit().foregroundStyle(Palette.ink)
                         Text("average of \(store.atlas.ratedNeeds.count) needs, out of 5").font(Typo.body2).foregroundStyle(Palette.ink2)

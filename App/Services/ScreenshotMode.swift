@@ -12,6 +12,13 @@ enum ScreenshotMode: String {
         return ScreenshotMode(rawValue: args[i + 1])
     }()
 
+    /// Optional `-uiScrollTo <anchor>` to scroll a screen to a named section.
+    static let scrollTarget: String? = {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-uiScrollTo"), i + 1 < args.count else { return nil }
+        return args[i + 1]
+    }()
+
     var stage: Stage? {
         switch self {
         case .pulse: return .pulse
@@ -52,9 +59,24 @@ enum ScreenshotMode: String {
                 .themed()
             let renderer = ImageRenderer(content: view)
             renderer.scale = 2
+            renderer.proposedSize = ProposedViewSize(width: 402, height: nil)
+            let name = "atlas-full-\(scheme == .dark ? "dark" : "light")"
             if let image = renderer.uiImage, let data = image.pngData() {
-                try? data.write(to: docs.appendingPathComponent("atlas-full-\(scheme == .dark ? "dark" : "light").png"))
+                do { try data.write(to: docs.appendingPathComponent(name + ".png")) }
+                catch { try? "write failed: \(error)".write(to: docs.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8) }
+            } else {
+                try? "renderer returned no image".write(to: docs.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8)
             }
+        }
+    }
+}
+
+extension View {
+    /// Scrolls to a named section when launched for screenshots with `-uiScrollTo`.
+    func screenshotScroll(_ proxy: ScrollViewProxy) -> some View {
+        onAppear {
+            guard let target = ScreenshotMode.scrollTarget else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo(target, anchor: .top) }
         }
     }
 }

@@ -28,6 +28,7 @@ struct NoticeStage: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 SectionHeading(title: "Energy audit",
                                hint: "List what fills a typical week. Rate how each leaves your energy, from −2 (drains a lot) to +2 (fills a lot), and how meaningful it feels, from 1 to 5.")
+                    .id("audit")
                 if !store.atlas.activities.isEmpty {
                     VStack(spacing: 0) {
                         ForEach(store.atlas.activities) { activity in
@@ -55,7 +56,7 @@ struct NoticeStage: View {
                     Button("Add", action: addActivity).atlasButton(.primary).disabled(!newActivity.hasText)
                 }
                 if store.atlas.namedActivities.count >= 2 {
-                    Panel { EnergyMapChart(activities: store.atlas.activities) }
+                    Panel { EnergyMapChart(activities: store.atlas.activities) }.id("chart")
                 }
             }
 

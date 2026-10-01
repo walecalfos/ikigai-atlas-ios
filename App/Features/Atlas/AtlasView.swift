@@ -11,10 +11,13 @@ struct AtlasView: View {
         NavigationStack {
             Group {
                 if store.atlas.hasStarted {
-                    ScrollView {
-                        AtlasContent(atlas: store.atlas, isExample: false)
-                            .padding(.horizontal, Space.m)
-                            .padding(.vertical, Space.m)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            AtlasContent(atlas: store.atlas, isExample: false)
+                                .padding(.horizontal, Space.m)
+                                .padding(.vertical, Space.m)
+                        }
+                        .screenshotScroll(proxy)
                     }
                 } else {
                     EmptyAtlas()
@@ -147,7 +150,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Sources of ikigai")
+                Eyebrow(text: "Sources of ikigai").id("map")
                 if sources.isEmpty {
                     EmptyNote(text: "Name your sources in stage 4 and they’ll be mapped here.")
                 } else {
@@ -160,7 +163,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Ikigai-kan pulse")
+                Eyebrow(text: "Ikigai-kan pulse").id("pulse")
                 if let average = atlas.pulseAverage {
                     HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                         Text(atlas.pulse.overall.map { "\($0)" } ?? "–").font(Typo.display).monospacedDigit().foregroundStyle(Palette.ink)
@@ -179,7 +182,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "What your atlas shows")
+                Eyebrow(text: "What your atlas shows").id("insights")
                 if insights.isEmpty {
                     EmptyNote(text: "Insights appear as you complete the stages.")
                 } else {
@@ -202,7 +205,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Threads")
+                Eyebrow(text: "Threads").id("threads")
                 if atlas.namedThreads.isEmpty {
                     EmptyNote(text: "Name your threads in stage 5.")
                 } else {
@@ -217,7 +220,7 @@ struct AtlasContent: View {
 
             if !sources.isEmpty {
                 Panel {
-                    Eyebrow(text: "Balance")
+                    Eyebrow(text: "Balance").id("balance")
                     BalanceBar(title: "Belonging and becoming", parts: [
                         ("Belonging", sources.filter { $0.mode == .belonging }.count, 1.0),
                         ("Both", sources.filter { $0.mode == .both }.count, 0.55),
@@ -232,7 +235,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Energy map")
+                Eyebrow(text: "Energy map").id("energy")
                 if atlas.namedActivities.isEmpty {
                     EmptyNote(text: "Complete the energy audit in stage 3.")
                 } else {
@@ -241,7 +244,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Small joys")
+                Eyebrow(text: "Small joys").id("joys")
                 if atlas.joys.isEmpty {
                     EmptyNote(text: "Collect them in stage 3.")
                 } else {
@@ -253,7 +256,7 @@ struct AtlasContent: View {
 
             if !atlas.namedLens.isEmpty {
                 Panel {
-                    Eyebrow(text: "Work lens")
+                    Eyebrow(text: "Work lens").id("lens")
                     ForEach(atlas.namedLens.sorted { $0.circleCount > $1.circleCount }) { l in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
@@ -275,7 +278,7 @@ struct AtlasContent: View {
             }
 
             Panel {
-                Eyebrow(text: "Experiments and rhythm")
+                Eyebrow(text: "Experiments and rhythm").id("experiments")
                 if atlas.namedExperiments.isEmpty {
                     EmptyNote(text: "Design experiments in stage 6.")
                 } else {
@@ -316,7 +319,7 @@ struct AtlasContent: View {
             }
 
             if !isExample && !forPrint {
-                PulseHistoryPanel()
+                PulseHistoryPanel().id("history")
             }
         }
     }

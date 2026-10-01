@@ -157,6 +157,7 @@ struct StageScreen<Content: View>: View {
     @EnvironmentObject private var router: AppRouter
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: Space.xl) {
                 VStack(alignment: .leading, spacing: Space.s) {
@@ -172,11 +173,13 @@ struct StageScreen<Content: View>: View {
                         .padding(.top, Space.xs)
                 }
                 content
-                continueButton
+                continueButton.id("end")
             }
             .padding(.horizontal, Space.m)
             .padding(.top, Space.s)
             .padding(.bottom, Space.xxl)
+        }
+        .screenshotScroll(proxy)
         }
         .atlasScreen()
         .scrollDismissesKeyboard(.interactively)
