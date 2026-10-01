@@ -72,7 +72,6 @@ enum ScreenshotMode: String {
         attempt("map", SourceMapChart(sources: atlas.liveSources))
         attempt("radar", NeedsRadarChart(pulse: atlas.pulse, coverage: atlas.needCoverage().mapValues(\.count)))
         attempt("energy", EnergyMapChart(activities: atlas.activities))
-        attempt("atlas", width: 402, AtlasContent(atlas: atlas, isExample: false, forPrint: true).padding(16))
 
         if let url = Exporter.pdfFile(named: "Ikigai Atlas", content: { PrintableAtlas(atlas: atlas) }) {
             try? FileManager.default.removeItem(at: docs.appendingPathComponent("export.pdf"))

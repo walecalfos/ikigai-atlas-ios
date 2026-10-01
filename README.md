@@ -56,7 +56,11 @@ Every push runs two checks on GitHub's Mac runners (see `.github/workflows/ci.ym
 - **Framework logic tests**: `swift test --package-path Packages/IkigaiCore`
 - **iOS app build**: generates the project and builds it for the iOS Simulator
 
+After every green build on `main`, a third workflow runs the app in an iPhone simulator and publishes screenshots of every screen, in light and dark, to the [`screenshots` branch](https://github.com/walecalfos/ikigai-atlas-ios/tree/screenshots). It also exports the example atlas to PDF to check that sharing works.
+
 Run the logic tests locally with `swift test --package-path Packages/IkigaiCore`.
+
+To open any screen filled with the fictional example atlas (useful for App Store screenshots), add launch arguments in Xcode under **Product → Scheme → Edit Scheme → Run → Arguments**: `-uiScreenshot atlas` (or `welcome`, `journey`, `pulse`, `remember`, `notice`, `gather`, `source`, `weave`, `live`, `example`, `learn`, `settings`), optionally with `-uiScrollTo insights` to jump to a section. Screenshot mode never touches real data.
 
 ## Release checklist
 
@@ -64,7 +68,7 @@ Run the logic tests locally with `swift test --package-path Packages/IkigaiCore`
 2. In [App Store Connect](https://appstoreconnect.apple.com), create the app with the same bundle identifier.
 3. Publish the privacy policy in `AppStore/privacy-policy.md` at a public URL and add it to the listing.
 4. Fill in the listing from `AppStore/listing.md`, the age rating questionnaire and the App Privacy section ("Data Not Collected").
-5. Take screenshots on a 6.9-inch iPhone simulator (Journey, a stage, the Atlas, Learn).
+5. Take screenshots on a 6.9-inch iPhone simulator (for example iPhone 17 Pro Max) using screenshot mode above. The images on the `screenshots` branch are 6.3-inch, fine for review but not the size App Store Connect asks for first.
 6. In Xcode choose **Product → Archive**, then **Distribute App → App Store Connect**. Test with TestFlight, then submit for review.
 
 ## Licences
