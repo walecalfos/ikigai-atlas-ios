@@ -13,10 +13,10 @@ struct SourceMapChart: View {
         let dots = SourceMap.layout(sources)
         let placedAreas = Set(sources.compactMap(\.domain)).count
         Canvas { ctx, size in
-            let side = min(size.width, size.height)
-            let k = side / SourceMap.size
+            let side: CGFloat = min(size.width, size.height)
+            let k: CGFloat = side / CGFloat(SourceMap.size)
             let origin = CGPoint(x: (size.width - side) / 2, y: (size.height - side) / 2)
-            func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: origin.x + x * k, y: origin.y + y * k) }
+            func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: origin.x + CGFloat(x) * k, y: origin.y + CGFloat(y) * k) }
             func polar(_ r: Double, _ deg: Double) -> CGPoint {
                 let p = SourceMap.point(radius: r, degrees: deg)
                 return pt(p.x, p.y)
@@ -27,17 +27,17 @@ struct SourceMapChart: View {
             for (i, domain) in Domain.allCases.enumerated() {
                 let mid = SourceMap.angle(for: domain)
                 var wedge = Path()
-                wedge.addArc(center: c, radius: SourceMap.outerRadius * k, startAngle: .degrees(mid - 22.5), endAngle: .degrees(mid + 22.5), clockwise: false)
-                wedge.addArc(center: c, radius: SourceMap.innerRadius * k, startAngle: .degrees(mid + 22.5), endAngle: .degrees(mid - 22.5), clockwise: true)
+                wedge.addArc(center: c, radius: CGFloat(SourceMap.outerRadius) * k, startAngle: .degrees(mid - 22.5), endAngle: .degrees(mid + 22.5), clockwise: false)
+                wedge.addArc(center: c, radius: CGFloat(SourceMap.innerRadius) * k, startAngle: .degrees(mid + 22.5), endAngle: .degrees(mid - 22.5), clockwise: true)
                 wedge.closeSubpath()
                 ctx.fill(wedge, with: .color(i.isMultiple(of: 2) ? Palette.canvas : Palette.brandTint.opacity(0.45)))
             }
             // Strength rings
             for strength in 1...5 {
-                let r = SourceMap.radius(forStrength: strength) * k
+                let r: CGFloat = CGFloat(SourceMap.radius(forStrength: strength)) * k
                 ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(Palette.line), lineWidth: 1)
             }
-            let edge = SourceMap.outerRadius * k
+            let edge: CGFloat = CGFloat(SourceMap.outerRadius) * k
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - edge, y: c.y - edge, width: edge * 2, height: edge * 2)), with: .color(Palette.line), lineWidth: 1)
             // Spokes
             for domain in Domain.allCases {
@@ -48,7 +48,7 @@ struct SourceMapChart: View {
                 ctx.stroke(spoke, with: .color(Palette.line), lineWidth: 1)
             }
             // Area names in the outer band
-            let labelSize = max(9, min(12, 11 * k * 1.5))
+            let labelSize: CGFloat = max(9, min(12, 11 * k * 1.5))
             for domain in Domain.allCases {
                 let name = domain.name.replacingOccurrences(of: " & ", with: " &\n")
                 ctx.draw(Text(name)
@@ -58,7 +58,7 @@ struct SourceMapChart: View {
                          anchor: .center)
             }
             // Dots
-            let dotR = SourceMap.dotRadius * k
+            let dotR: CGFloat = CGFloat(SourceMap.dotRadius) * k
             for dot in dots {
                 let p = pt(dot.x, dot.y)
                 let rect = CGRect(x: p.x - dotR, y: p.y - dotR, width: dotR * 2, height: dotR * 2)
@@ -77,7 +77,7 @@ struct SourceMapChart: View {
                 ctx.draw(Text("\(dot.number)").font(.system(size: max(8, dotR * 0.95), weight: .bold)).foregroundStyle(color), at: p, anchor: .center)
             }
             // Hub
-            let hubR = 20 * k
+            let hubR: CGFloat = 20 * k
             let hub = Path(ellipseIn: CGRect(x: c.x - hubR, y: c.y - hubR, width: hubR * 2, height: hubR * 2))
             ctx.fill(hub, with: .color(Palette.surface))
             ctx.stroke(hub, with: .color(Palette.ink3), lineWidth: 1)
@@ -99,11 +99,15 @@ struct NeedsRadarChart: View {
     var body: some View {
         Canvas { ctx, size in
             let labelRoom: CGFloat = 54
-            let r = max(40, min(size.width / 2 - labelRoom, size.height / 2 - 30))
+            let r: CGFloat = max(40, min(size.width / 2 - labelRoom, size.height / 2 - 30))
             let c = CGPoint(x: size.width / 2, y: size.height / 2 + 4)
             let needs = Need.allCases
             func angle(_ i: Int) -> Double { (-90 + Double(i) * 360 / Double(needs.count)) * .pi / 180 }
-            func pt(_ i: Int, _ v: Double) -> CGPoint { CGPoint(x: c.x + r * v * cos(angle(i)), y: c.y + r * v * sin(angle(i))) }
+            func pt(_ i: Int, _ v: Double) -> CGPoint {
+                let a: Double = angle(i)
+                let length: Double = Double(r) * v
+                return CGPoint(x: c.x + CGFloat(length * cos(a)), y: c.y + CGFloat(length * sin(a)))
+            }
             func polygon(_ values: [Double]) -> Path {
                 var p = Path()
                 for (i, v) in values.enumerated() {
@@ -135,8 +139,12 @@ struct NeedsRadarChart: View {
             }
             for (i, need) in needs.enumerated() {
                 let p = pt(i, 1.14)
-                let cx = cos(angle(i)), cy = sin(angle(i))
-                let anchor = UnitPoint(x: abs(cx) < 0.25 ? 0.5 : (cx > 0 ? 0 : 1), y: cy < -0.6 ? 1 : (cy > 0.6 ? 0 : 0.5))
+                let a: Double = angle(i)
+                let cx: Double = cos(a)
+                let cy: Double = sin(a)
+                let ax: CGFloat = abs(cx) < 0.25 ? 0.5 : (cx > 0 ? 0 : 1)
+                let ay: CGFloat = cy < -0.6 ? 1 : (cy > 0.6 ? 0 : 0.5)
+                let anchor = UnitPoint(x: ax, y: ay)
                 let value = pulse[need].map { String($0) } ?? "–"
                 let name = need.shortName.replacingOccurrences(of: " ", with: "\n")
                 let label = Text(name).font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.ink)

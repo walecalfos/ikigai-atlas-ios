@@ -149,7 +149,7 @@ struct AtlasContent: View {
             Panel {
                 Eyebrow(text: "Sources of ikigai")
                 if sources.isEmpty {
-                    Empty(text: "Name your sources in stage 4 and they’ll be mapped here.")
+                    EmptyNote(text: "Name your sources in stage 4 and they’ll be mapped here.")
                 } else {
                     Text("\(sources.count) sources across \(Set(sources.compactMap(\.domain)).count) of 8 areas. Nearer the centre means more worth.")
                         .font(Typo.body2)
@@ -174,14 +174,14 @@ struct AtlasContent: View {
                         KeySwatch(dashed: true, text: "Sources feeding it (0 to 3+)")
                     }
                 } else {
-                    Empty(text: "Take the pulse in stage 1.")
+                    EmptyNote(text: "Take the pulse in stage 1.")
                 }
             }
 
             Panel {
                 Eyebrow(text: "What your atlas shows")
                 if insights.isEmpty {
-                    Empty(text: "Insights appear as you complete the stages.")
+                    EmptyNote(text: "Insights appear as you complete the stages.")
                 } else {
                     VStack(alignment: .leading, spacing: Space.s) {
                         ForEach(insights.prefix(9)) { insight in
@@ -204,7 +204,7 @@ struct AtlasContent: View {
             Panel {
                 Eyebrow(text: "Threads")
                 if atlas.namedThreads.isEmpty {
-                    Empty(text: "Name your threads in stage 5.")
+                    EmptyNote(text: "Name your threads in stage 5.")
                 } else {
                     ForEach(atlas.namedThreads) { t in
                         VStack(alignment: .leading, spacing: 2) {
@@ -234,7 +234,7 @@ struct AtlasContent: View {
             Panel {
                 Eyebrow(text: "Energy map")
                 if atlas.namedActivities.isEmpty {
-                    Empty(text: "Complete the energy audit in stage 3.")
+                    EmptyNote(text: "Complete the energy audit in stage 3.")
                 } else {
                     EnergyMapChart(activities: atlas.activities)
                 }
@@ -243,7 +243,7 @@ struct AtlasContent: View {
             Panel {
                 Eyebrow(text: "Small joys")
                 if atlas.joys.isEmpty {
-                    Empty(text: "Collect them in stage 3.")
+                    EmptyNote(text: "Collect them in stage 3.")
                 } else {
                     FlowLayout(spacing: Space.xs) {
                         ForEach(atlas.joys, id: \.self) { TagChip(title: $0) }
@@ -277,7 +277,7 @@ struct AtlasContent: View {
             Panel {
                 Eyebrow(text: "Experiments and rhythm")
                 if atlas.namedExperiments.isEmpty {
-                    Empty(text: "Design experiments in stage 6.")
+                    EmptyNote(text: "Design experiments in stage 6.")
                 } else {
                     ForEach(atlas.namedExperiments) { e in
                         HStack(alignment: .top, spacing: Space.s) {
@@ -337,7 +337,7 @@ struct AtlasContent: View {
     }
 }
 
-private struct Empty: View {
+private struct EmptyNote: View {
     let text: String
     var body: some View { Text(text).font(Typo.body2).foregroundStyle(Palette.ink3) }
 }
