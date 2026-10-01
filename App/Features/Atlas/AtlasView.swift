@@ -376,7 +376,12 @@ private struct KeySwatch: View {
     var body: some View {
         HStack(spacing: 6) {
             if dashed {
-                Rectangle().stroke(Palette.fed, style: StrokeStyle(lineWidth: 2, dash: [4, 3])).frame(width: 16, height: 0.1)
+                Path { p in
+                    p.move(to: CGPoint(x: 0, y: 5))
+                    p.addLine(to: CGPoint(x: 18, y: 5))
+                }
+                .stroke(Palette.fed, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                .frame(width: 18, height: 10)
             } else {
                 RoundedRectangle(cornerRadius: 2).fill(Palette.brand.opacity(0.3)).overlay(RoundedRectangle(cornerRadius: 2).stroke(Palette.brand, lineWidth: 1.5)).frame(width: 14, height: 10)
             }

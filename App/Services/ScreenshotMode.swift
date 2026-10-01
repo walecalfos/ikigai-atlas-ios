@@ -46,28 +46,46 @@ enum ScreenshotMode: String {
         }
     }
 
-    /// Writes full-length renders of the example atlas, in light and dark, to Documents.
+    /// Checks the export path: renders the example atlas to PDF and images in Documents,
+    /// with a log of what worked, for CI to collect.
     @MainActor
     static func renderAtlas() {
         guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        for scheme in [ColorScheme.light, .dark] {
-            let view = AtlasContent(atlas: .example, isExample: false, forPrint: true)
-                .padding(16)
-                .frame(width: 402)
-                .background(Palette.canvas)
-                .environment(\.colorScheme, scheme)
-                .themed()
-            let renderer = ImageRenderer(content: view)
+        var log: [String] = []
+        let atlas = Atlas.example
+
+        func attempt<V: View>(_ name: String, width: CGFloat = 370, _ view: V) {
+            let renderer = ImageRenderer(content: view.frame(width: width).background(Palette.canvas).themed())
+            renderer.proposedSize = ProposedViewSize(width: width, height: nil)
             renderer.scale = 2
-            renderer.proposedSize = ProposedViewSize(width: 402, height: nil)
-            let name = "atlas-full-\(scheme == .dark ? "dark" : "light")"
+            var measured = CGSize.zero
+            renderer.render { size, _ in measured = size }
             if let image = renderer.uiImage, let data = image.pngData() {
-                do { try data.write(to: docs.appendingPathComponent(name + ".png")) }
-                catch { try? "write failed: \(error)".write(to: docs.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8) }
+                try? data.write(to: docs.appendingPathComponent("render-\(name).png"))
+                log.append("\(name): ok \(Int(measured.width))x\(Int(measured.height))")
             } else {
-                try? "renderer returned no image".write(to: docs.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8)
+                log.append("\(name): no image, measured \(Int(measured.width))x\(Int(measured.height))")
             }
         }
+
+        attempt("statement", NacreTablet { Text(atlas.statement).font(Typo.statement).foregroundStyle(Palette.ink) })
+        attempt("map", SourceMapChart(sources: atlas.liveSources))
+        attempt("radar", NeedsRadarChart(pulse: atlas.pulse, coverage: atlas.needCoverage().mapValues(\.count)))
+        attempt("energy", EnergyMapChart(activities: atlas.activities))
+        attempt("atlas", width: 402, AtlasContent(atlas: atlas, isExample: false, forPrint: true).padding(16))
+
+        if let url = Exporter.pdfFile(named: "Ikigai Atlas", content: { PrintableAtlas(atlas: atlas) }) {
+            try? FileManager.default.removeItem(at: docs.appendingPathComponent("export.pdf"))
+            do {
+                try FileManager.default.copyItem(at: url, to: docs.appendingPathComponent("export.pdf"))
+                log.append("pdf: ok")
+            } catch {
+                log.append("pdf: copy failed \(error)")
+            }
+        } else {
+            log.append("pdf: export returned nil")
+        }
+        try? log.joined(separator: "\n").write(to: docs.appendingPathComponent("render-log.txt"), atomically: true, encoding: .utf8)
     }
 }
 

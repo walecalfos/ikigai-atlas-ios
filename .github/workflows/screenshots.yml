@@ -108,6 +108,8 @@ jobs:
           DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
           ls -la "$DATA"/Documents || true
           cp "$DATA"/Documents/* shots/ || true
+          if [ -f shots/export.pdf ]; then sips -s format png shots/export.pdf --out shots/export-pdf.png || true; fi
+          cat shots/render-log.txt || true
           ls -la shots
 
       - name: Publish to the screenshots branch

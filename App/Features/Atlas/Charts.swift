@@ -98,8 +98,8 @@ struct NeedsRadarChart: View {
 
     var body: some View {
         Canvas { ctx, size in
-            let labelRoom: CGFloat = 54
-            let r: CGFloat = max(40, min(size.width / 2 - labelRoom, size.height / 2 - 30))
+            // Leave room on every side for two-line labels such as "Being myself 2".
+            let r: CGFloat = max(40, min(size.width / 2 - 78, size.height / 2 - 36))
             let c = CGPoint(x: size.width / 2, y: size.height / 2 + 4)
             let needs = Need.allCases
             func angle(_ i: Int) -> Double { (-90 + Double(i) * 360 / Double(needs.count)) * .pi / 180 }
@@ -138,7 +138,7 @@ struct NeedsRadarChart: View {
                 }
             }
             for (i, need) in needs.enumerated() {
-                let p = pt(i, 1.14)
+                let p = pt(i, 1.0 + 10 / Double(r))
                 let a: Double = angle(i)
                 let cx: Double = cos(a)
                 let cy: Double = sin(a)
@@ -169,7 +169,8 @@ struct EnergyMapChart: View {
         Canvas { ctx, size in
             let plot = CGRect(x: 22, y: 6, width: size.width - 28, height: size.height - 34)
             func x(_ e: Int) -> CGFloat { plot.minX + 18 + CGFloat(e + 2) / 4 * (plot.width - 36) }
-            func y(_ m: Int) -> CGFloat { plot.maxY - 16 - CGFloat(m - 1) / 4 * (plot.height - 46) }
+            // Rows sit inside the frame with room above and below for the corner labels.
+            func y(_ m: Int) -> CGFloat { plot.maxY - 28 - CGFloat(m - 1) / 4 * (plot.height - 70) }
 
             // Energising-and-meaningful zone
             ctx.fill(Path(roundedRect: CGRect(x: x(0), y: plot.minY, width: plot.maxX - x(0), height: y(3) - plot.minY), cornerRadius: 6),
@@ -187,29 +188,59 @@ struct EnergyMapChart: View {
             axis.addLine(to: CGPoint(x: x(0), y: plot.maxY))
             ctx.stroke(axis, with: .color(Palette.ink3), lineWidth: 1)
 
+            // Corner labels, kept clear of activity labels below.
             let q = Font.system(size: 9, weight: .bold)
-            ctx.draw(Text("DRAINING BUT\nMEANINGFUL").font(q).foregroundStyle(Palette.ink3), at: CGPoint(x: plot.minX + 8, y: plot.minY + 8), anchor: .topLeading)
-            ctx.draw(Text("ENERGISING AND\nMEANINGFUL").font(q).foregroundStyle(Palette.brand), at: CGPoint(x: plot.maxX - 8, y: plot.minY + 8), anchor: .topTrailing)
-            ctx.draw(Text("DRIFT").font(q).foregroundStyle(Palette.ink3), at: CGPoint(x: plot.minX + 8, y: plot.maxY - 6), anchor: .bottomLeading)
-            ctx.draw(Text("LIGHT").font(q).foregroundStyle(Palette.ink3), at: CGPoint(x: plot.maxX - 8, y: plot.maxY - 6), anchor: .bottomTrailing)
+            var taken: [CGRect] = []
+            func corner(_ text: String, _ color: Color, _ point: CGPoint, _ anchor: UnitPoint) {
+                let resolved = ctx.resolve(Text(text).font(q).foregroundStyle(color))
+                let sz = resolved.measure(in: CGSize(width: 160, height: 40))
+                let rect = CGRect(x: point.x - anchor.x * sz.width, y: point.y - anchor.y * sz.height, width: sz.width, height: sz.height)
+                taken.append(rect.insetBy(dx: -3, dy: -2))
+                ctx.draw(resolved, at: point, anchor: anchor)
+            }
+            corner("DRAINING BUT\nMEANINGFUL", Palette.ink3, CGPoint(x: plot.minX + 8, y: plot.minY + 7), .topLeading)
+            corner("ENERGISING AND\nMEANINGFUL", Palette.brand, CGPoint(x: plot.maxX - 8, y: plot.minY + 7), .topTrailing)
+            corner("DRIFT", Palette.ink3, CGPoint(x: plot.minX + 8, y: plot.maxY - 6), .bottomLeading)
+            corner("LIGHT", Palette.ink3, CGPoint(x: plot.maxX - 8, y: plot.maxY - 6), .bottomTrailing)
             ctx.draw(Text("drains you  ←  energy  →  fills you").font(.system(size: 11)).foregroundStyle(Palette.ink2),
                      at: CGPoint(x: plot.midX, y: size.height - 4), anchor: .bottom)
 
+            // Dots first, so labels can steer around all of them.
             var stacked: [String: Int] = [:]
-            for a in named {
+            let points: [(Activity, CGPoint)] = named.map { a in
                 let e = min(2, max(-2, a.energy)), m = min(5, max(1, a.meaning))
                 let key = "\(e):\(m)"
                 let k = stacked[key, default: 0]
                 stacked[key] = k + 1
-                let p = CGPoint(x: x(e), y: y(m) + CGFloat(k) * 15)
+                return (a, CGPoint(x: x(e), y: y(m) + CGFloat(k) * 15))
+            }
+            for (_, p) in points {
                 ctx.fill(Path(ellipseIn: CGRect(x: p.x - 5, y: p.y - 5, width: 10, height: 10)), with: .color(Palette.brandFill))
+            }
+            let dotRects = points.map { CGRect(x: $0.1.x - 6, y: $0.1.y - 6, width: 12, height: 12) }
+            for (i, (a, p)) in points.enumerated() {
                 let name = a.name.trimmed.count > 18 ? String(a.name.trimmed.prefix(17)) + "…" : a.name.trimmed
-                let right = p.x < plot.maxX - 110
-                ctx.draw(Text(name).font(.system(size: 11)).foregroundStyle(Palette.ink),
-                         at: CGPoint(x: right ? p.x + 9 : p.x - 9, y: p.y), anchor: right ? .leading : .trailing)
+                let resolved = ctx.resolve(Text(name).font(.system(size: 11)).foregroundStyle(Palette.ink))
+                let sz = resolved.measure(in: CGSize(width: 150, height: 30))
+                let candidates = [
+                    CGRect(x: p.x + 9, y: p.y - sz.height / 2, width: sz.width, height: sz.height),
+                    CGRect(x: p.x - 9 - sz.width, y: p.y - sz.height / 2, width: sz.width, height: sz.height),
+                    CGRect(x: p.x - sz.width / 2, y: p.y + 7, width: sz.width, height: sz.height),
+                    CGRect(x: p.x - sz.width / 2, y: p.y - 7 - sz.height, width: sz.width, height: sz.height)
+                ]
+                let others = dotRects.enumerated().filter { $0.offset != i }.map(\.element)
+                let fits: (CGRect) -> Bool = { r in
+                    r.minX >= plot.minX + 2 && r.maxX <= plot.maxX - 2 && r.minY >= plot.minY + 2 && r.maxY <= plot.maxY - 2
+                        && !taken.contains { $0.intersects(r) } && !others.contains { $0.intersects(r) }
+                }
+                let chosen = candidates.first(where: fits)
+                    ?? candidates.first { $0.minX >= plot.minX && $0.maxX <= plot.maxX }
+                    ?? candidates[0]
+                taken.append(chosen.insetBy(dx: -2, dy: -1))
+                ctx.draw(resolved, at: CGPoint(x: chosen.minX, y: chosen.minY), anchor: .topLeading)
             }
         }
-        .frame(height: 300)
+        .frame(height: 320)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Energy map of \(named.count) activities")
         .accessibilityValue(named.map { "\($0.name): energy \($0.energy), meaning \($0.meaning)" }.joined(separator: "; "))
