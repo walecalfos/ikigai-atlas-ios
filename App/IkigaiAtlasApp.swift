@@ -4,13 +4,21 @@ import IkigaiCore
 @main
 struct IkigaiAtlasApp: App {
     @StateObject private var store: AtlasStore
-    @StateObject private var router = AppRouter()
+    @StateObject private var router: AppRouter
     @StateObject private var lock = AppLock()
     @StateObject private var reader = PatternReader()
 
     init() {
         AtlasTheme.install()
-        _store = StateObject(wrappedValue: AtlasStore.makeDefault())
+        if let mode = ScreenshotMode.current {
+            let router = AppRouter()
+            mode.configure(router)
+            _store = StateObject(wrappedValue: AtlasStore.preview(.example))
+            _router = StateObject(wrappedValue: router)
+        } else {
+            _store = StateObject(wrappedValue: AtlasStore.makeDefault())
+            _router = StateObject(wrappedValue: AppRouter())
+        }
     }
 
     var body: some Scene {
@@ -87,6 +95,7 @@ struct RootView: View {
             Task { await Reminders.reschedule(Reminders.savedSettings, atlas: atlas) }
         }
         .onAppear {
+            if ScreenshotMode.current == .render { ScreenshotMode.renderAtlas() }
             if !hasSeenWelcome { showingWelcome = true }
             if lock.isLocked { lock.unlock() }
         }

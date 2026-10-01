@@ -49,6 +49,11 @@ struct GatherStage: View {
                     .foregroundStyle(Palette.ink2)
             }
         }
+        .onAppear {
+            if ScreenshotMode.current == .source, editing == nil, let first = store.atlas.sources.first {
+                editing = EditingSource(id: first.id)
+            }
+        }
         .sheet(item: $editing) { item in
             SourceEditor(source: store.binding(\.sources, id: item.id, fallback: Source(id: item.id, text: ""))) {
                 store.atlas.sources.removeAll { $0.id == item.id }

@@ -1,0 +1,110 @@
+name: Screenshots
+
+# After a successful build on main, runs the app in an iPhone simulator, captures every
+# main screen in light and dark (filled with the fictional example atlas), and publishes
+# the images to the `screenshots` branch for design review and App Store use.
+
+on:
+  workflow_run:
+    workflows: ["Build and test"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: macos-15
+    timeout-minutes: 50
+    env:
+      BUNDLE_ID: com.walecalfos.ikigaiatlas
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          data = json.load(sys.stdin)["devices"]
+          best = None
+          for runtime, devices in data.items():
+              if "iOS" not in runtime:
+                  continue
+              m = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              version = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+              for d in devices:
+                  if not d.get("isAvailable"):
+                      continue
+                  score = (version, 1 if re.fullmatch(r"iPhone \d+ Pro", d["name"]) else 0)
+                  if d["name"].startswith("iPhone") and (best is None or score > best[0]):
+                      best = (score, d["udid"], d["name"])
+          print(best[1] if best else "")
+          ')
+          echo "Using simulator $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project IkigaiAtlas.xcodeproj -scheme IkigaiAtlas -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build | tail -5
+
+      - name: Capture screens
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/IkigaiAtlas.app
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
+          mkdir -p shots
+          shoot() {
+            xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" -uiScreenshot "$1" > /dev/null
+            sleep "${3:-7}"
+            xcrun simctl io "$UDID" screenshot "shots/$2.png" > /dev/null
+          }
+          xcrun simctl ui "$UDID" appearance light
+          for s in welcome journey pulse remember notice gather source weave live atlas example learn settings; do shoot "$s" "$s"; done
+          xcrun simctl ui "$UDID" appearance dark
+          for s in welcome journey pulse gather atlas example; do shoot "$s" "$s-dark"; done
+          xcrun simctl ui "$UDID" appearance light
+          shoot render render 14
+          DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
+          cp "$DATA"/Documents/*.png shots/ || true
+          ls -la shots
+
+      - name: Publish to the screenshots branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          OUT=$(mktemp -d)
+          cp shots/*.png "$OUT"/
+          cd "$OUT"
+          git init -q -b screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          printf "# Screenshots\n\nCaptured from commit %s.\n" "$SHA" > README.md
+          git add -A
+          git commit -q -m "Screenshots for $SHA"
+          git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" screenshots
