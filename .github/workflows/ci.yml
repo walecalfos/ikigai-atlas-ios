@@ -27,19 +27,27 @@ jobs:
     name: iOS app build
     runs-on: macos-15
     timeout-minutes: 40
-    if: ${{ hashFiles('App/IkigaiAtlasApp.swift') != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check the app is present
+        id: check
+        run: |
+          if [ -f App/IkigaiAtlasApp.swift ]; then echo "ready=true" >> "$GITHUB_OUTPUT"; else echo "ready=false" >> "$GITHUB_OUTPUT"; fi
       - uses: maxim-lobanov/setup-xcode@v1
+        if: steps.check.outputs.ready == 'true'
         with:
           xcode-version: latest-stable
       - name: Show Xcode version
+        if: steps.check.outputs.ready == 'true'
         run: xcodebuild -version
       - name: Install XcodeGen
+        if: steps.check.outputs.ready == 'true'
         run: brew install xcodegen
       - name: Generate Xcode project
+        if: steps.check.outputs.ready == 'true'
         run: xcodegen generate
       - name: Build for iOS Simulator
+        if: steps.check.outputs.ready == 'true'
         run: |
           set -o pipefail
           xcodebuild \
@@ -52,7 +60,7 @@ jobs:
             build | tee build.log | grep -E "error:|warning: .*IkigaiAtlas|BUILD (SUCCEEDED|FAILED)" || true
           grep -q "BUILD SUCCEEDED" build.log
       - name: Upload build log
-        if: always()
+        if: always() && steps.check.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: build-log
